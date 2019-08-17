@@ -26,7 +26,20 @@
 --==========================================================================================================--
 --========================================== Additional Comments ==========================================--
 --==========================================================================================================-- 
-	-- hard-coded LUT transfer function (combinational logic) plus output register (sequential logic)
+  -- hard-coded LUT transfer function (combinational logic) plus output register (sequential logic)
+  -- Each lane consists of a TMR-ed pattern generator, a chain of Logic Test Structures (LTS), a TMR-ed pattern checker. 
+  -- The pattern generator outputs test vectors which are periodically repeated 6 bits wide sequences from 0 to 63. 
+  -- A width of the test vector was set to 6 bits because the input of an LUT in Kintex-7 is also 6 bits wide. 
+  -- The LTS is replicated 64 times, forming a chain that shifts the test vectors. 
+  -- The basic LTS consists of a hard-coded LUT transfer function (Combinational Logic) and an output register (R). 
+  -- The combinational logic increments the input data by 1 and the output register holds the value for one clock cycle. 
+  -- In order to test different redundancy topologies in the LTS, it is possible to employ TMR either in the combinational logic, the output register or both.
+  -- Also, the data voter between the combinational logic and the output register or the full chain of the basic LTS can be implemented with TMR. 
+  -- After the reset signal is deasserted, the pattern generator starts outputting test vectors which are pushed through the chain of the LTS at a frequency of 100MHz. 
+  -- 64 clock cycles later, data at the output from the chain of the LTS are copies of the data outputted by the pattern generator. 
+  -- This condition remains true unless an error occurs either in the pattern generator, the chain of the LTS, or the routing between those modules and the pattern checker. 
+  -- The pattern checker compares the output from the chain of the LTS to the reference output from the pattern generator. 
+  -- If a discrepancy is found, a pattern error signal is asserted on the PAT ERR output. 
 --==========================================================================================================--
 
 library ieee;
