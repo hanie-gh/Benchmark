@@ -6,7 +6,7 @@
 -- Engineer:               Hanie Ghasemy (hanie.ghasemy@gmail.com)
 --                                                                                                 
 -- Project Name:           Test_Benchmark                                                            
--- Module Name:            lane                                         
+-- Module Name:            lane_tmr                                         
 --                                                                                                 
 -- Language:               VHDL'93                                                                  
 --                                                                                                   
@@ -27,7 +27,7 @@
 --========================================== Additional Comments ==========================================--
 --==========================================================================================================-- 
   -- hard-coded LUT transfer function (combinational logic) plus output register (sequential logic)
-  -- Each lane consists of a TMR-ed pattern generator, a chain of Logic Test Structures (LTS), a TMR-ed pattern checker. 
+  -- Each lane_tmr consists of a TMR-ed pattern generator, a chain of Logic Test Structures (LTS), a TMR-ed pattern checker. 
   -- The pattern generator outputs test vectors which are periodically repeated 6 bits wide sequences from 0 to 63. 
   -- A width of the test vector was set to 6 bits because the input of an LUT in Kintex-7 is also 6 bits wide. 
   -- The LTS is replicated 64 times, forming a chain that shifts the test vectors. 
@@ -52,20 +52,29 @@ use ieee.std_logic_unsigned.all;
 -- library unisim;
 -- use unisim.vcomponents.all;
 --==========================================================================================================--
-entity lane is
+entity lane_tmr is
     port(
         clk_in      : in std_logic;
         rst_in      : in std_logic;
-        pat_err_out : out std_logic
-        --lane_war_out: out std_logic
+        pat_err_out : out std_logic;
+		    pat_gen_out : out std_logic_vector(5 downto 0)
         );
 end entity;
 --==========================================================================================================--
-architecture structural of lane is
-    signal pat_gen_s  : std_logic_vector(5 downto 0) := (others => '0');
-    signal pat_chk_s  : std_logic_vector(5 downto 0) := (others => '0');
-    type chain_lts is array (0 to 64) of std_logic_vector(5 downto 0);
-  signal lts_s      : chain_lts := (others => (others => '0'));
+architecture structural of lane_tmr is
+  attribute dont_touch : string;
+  attribute dont_touch of structural : architecture is "yes";  
+    
+  signal pat_gen_s  : std_logic_vector(5 downto 0) := (others => '0');
+  type chain_lts is array (0 to 64) of std_logic_vector(5 downto 0);
+  signal lts_s0     : chain_lts := (others => (others => '0'));
+  signal lts_s1     : chain_lts := (others => (others => '0'));
+  signal lts_s2     : chain_lts := (others => (others => '0'));
+  signal lts_s      : std_logic_vector(5 downto 0) := (others => '0');
+
+  attribute dont_touch of lts_s0 : signal is "yes";
+  attribute dont_touch of lts_s1 : signal is "yes";
+  attribute dont_touch of lts_s2 : signal is "yes";
 
   component LTS is
     port(
@@ -73,6 +82,15 @@ architecture structural of lane is
         d_in        : in std_logic_vector(5 downto 0);
         d_out       : out std_logic_vector(5 downto 0));
     end component;
+
+
+  component voter_tmr is
+  port(
+      in1     : in std_logic_vector(5 downto 0);
+      in2     : in std_logic_vector(5 downto 0);
+      in3     : in std_logic_vector(5 downto 0);
+      output  : out std_logic_vector(5 downto 0));
+  end component;      
 --==========================================================================================================--
 begin
   ------------------------------------------------------------
@@ -86,26 +104,46 @@ begin
             pat_gen_s <= pat_gen_s + 1;
     end if;
   end process proc;
-  lts_s(0)      <= pat_gen_s;
-  pat_chk_s     <= lts_s(63);
-
+  lts_s0(0)     <= pat_gen_s;
+  lts_s1(0)     <= pat_gen_s;
+  lts_s2(0)     <= pat_gen_s;
+  pat_gen_out   <= pat_gen_s;
   ------------------------------------------------------------
-  --  chane of 64 LTS
+  --  TMR chane of 64 LTS
   ------------------------------------------------------------ 
+  --== chane of 64 LTS
   gen_cas: for i in 0 to 63 generate   
     begin  --"begin" statement for "generate"
     --entity work.LTS port map   --usual port mapping
-    ins : LTS port map
+    ins0 : LTS port map
     (clk_in  => clk_in,
-    d_in    => lts_s(i),
-    d_out   => lts_s(i+1));  
+    d_in    => lts_s0(i),
+    d_out   => lts_s0(i+1));  
+    
+    ins1 : LTS port map
+    (clk_in  => clk_in,
+    d_in    => lts_s1(i),
+    d_out   => lts_s1(i+1)); 
+
+    ins2 : LTS port map
+    (clk_in  => clk_in,
+    d_in    => lts_s2(i),
+    d_out   => lts_s2(i+1)); 
     
   end generate;  --end "generate" block.
 
+  --== VOTER
+  ins_tmr : voter_tmr
+  port map (
+  in1         => lts_s0(63),
+  in2         => lts_s1(63),
+  in3         => lts_s2(63),
+  output      => lts_s); 
+    
   ------------------------------------------------------------
   --  pattern checker
   ------------------------------------------------------------                   
-  pat_err_out   <= '0' when lts_s(64)=pat_gen_s else
+  pat_err_out   <= '0' when (lts_s = pat_gen_s) else
                    '1';
 
 

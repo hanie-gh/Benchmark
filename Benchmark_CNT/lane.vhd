@@ -56,7 +56,8 @@ entity lane is
     port(
         clk_in      : in std_logic;
         rst_in      : in std_logic;
-        pat_err_out : out std_logic
+        pat_err_out : out std_logic;
+		    pat_gen_out : out std_logic_vector(5 downto 0)
         --lane_war_out: out std_logic
         );
 end entity;
@@ -87,6 +88,7 @@ begin
     end if;
   end process proc;
   lts_s(0)      <= pat_gen_s;
+  pat_gen_out   <= pat_gen_s;
   pat_chk_s     <= lts_s(63);
 
   ------------------------------------------------------------
