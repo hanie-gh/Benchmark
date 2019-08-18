@@ -95,7 +95,7 @@ begin
   ------------------------------------------------------------
   --  clock division
   ------------------------------------------------------------  
-  proc : process(clk_raw)
+  proc : process(clk_raw, gpio_switch_in_rst)
   variable counter  : integer := 0;
   begin	 
     if (rising_edge(clk_raw)) then

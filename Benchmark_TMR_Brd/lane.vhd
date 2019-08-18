@@ -79,14 +79,12 @@ begin
   ------------------------------------------------------------
   --  pattern generator
   ------------------------------------------------------------  
-  proc : process(clk_in)
-  begin	 
-    if (rising_edge(clk_in)) then
-        if rst_in = '1' then
-            pat_gen_s <= (others => '0');
-        else
+  proc : process(clk_in, rst_in)
+  begin	
+    if (rst_in = '1') then
+            pat_gen_s <= (others => '0');   
+    elsif (rising_edge(clk_in)) then
             pat_gen_s <= pat_gen_s + 1;
-        end if;
     end if;
   end process proc;
   lts_s(0)      <= pat_gen_s;

@@ -78,7 +78,7 @@ begin
   ------------------------------------------------------------
   --  pattern generator
   ------------------------------------------------------------  
-  proc : process(clk_in)
+  proc : process(clk_in, rst_in)
   begin	 
     if (rising_edge(clk_in)) then
         if rst_in = '1' then
